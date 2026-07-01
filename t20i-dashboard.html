@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T20I Analytics — 10 Nations, 2005–2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --navy: #0B1B33;
+    --navy-deep: #071227;
+    --amber: #E8A33D;
+    --off-white: #F2EFE7;
+    --slate: #7C8798;
+    --line: rgba(242,239,231,0.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--navy-deep); color: var(--off-white); font-family: 'Inter', sans-serif; line-height: 1.6; }
+  .display { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  a { color: var(--amber); }
+
+  .hero {
+    position: relative; padding: 64px 24px 40px;
+    background: radial-gradient(ellipse at top left, rgba(232,163,61,0.08), transparent 55%), linear-gradient(180deg, var(--navy) 0%, var(--navy-deep) 100%);
+    border-bottom: 1px solid var(--line);
+  }
+  .hero-inner { max-width: 1180px; margin: 0 auto; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); margin-bottom: 20px; }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+  h1.display { font-size: clamp(32px, 4.6vw, 56px); font-weight: 700; line-height: 1.0; max-width: 820px; }
+  h1.display span { color: var(--amber); }
+  .hero-sub { max-width: 620px; margin-top: 16px; font-size: 15.5px; color: var(--slate); }
+
+  .flag-row { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .flag-tag { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 500; padding: 8px 14px; border: 1px solid var(--line); background: rgba(242,239,231,0.02); color: var(--slate); cursor: pointer; user-select: none; transition: all 0.15s ease; }
+  .flag-swatch { width: 12px; height: 12px; flex-shrink: 0; display: inline-block; }
+  .flag-tag:hover { border-color: var(--amber); color: var(--off-white); }
+  .flag-tag.active { border-color: var(--amber); color: var(--amber); background: rgba(232,163,61,0.08); }
+
+  .scoreboard { max-width: 1180px; margin: 40px auto 0; display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); }
+  .scoreboard .stat { padding: 20px 18px; border-right: 1px solid var(--line); }
+  .scoreboard .stat:last-child { border-right: none; }
+  .stat .num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: clamp(20px, 2.4vw, 28px); color: var(--off-white); }
+  .stat .label { margin-top: 4px; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--slate); }
+
+  .dash { max-width: 1180px; margin: 24px auto 0; padding: 0 24px 100px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .panel { background: var(--navy); padding: 22px 22px 14px; }
+  .panel.full { grid-column: 1 / -1; }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .panel-title { font-family: 'Oswald', sans-serif; font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--off-white); }
+  .panel-hint { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--slate); }
+  .panel canvas { max-height: 280px; }
+  .panel.tall canvas { max-height: 340px; }
+
+  .team-readout { display: none; max-width: 1180px; margin: 24px auto 0; padding: 0 24px; }
+  .team-readout.show { display: block; }
+  .team-readout-inner { background: var(--navy); padding: 22px; border: 1px solid var(--line); }
+  .readout-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .readout-swatch { width: 22px; height: 22px; flex-shrink: 0; }
+  .readout-name { font-family: 'Oswald', sans-serif; font-size: 22px; text-transform: uppercase; }
+  .readout-clear { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--slate); cursor: pointer; border: 1px solid var(--line); padding: 6px 12px; }
+  .readout-clear:hover { color: var(--amber); border-color: var(--amber); }
+  .readout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
+  .readout-item .v { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 20px; color: var(--amber); }
+  .readout-item .k { font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); margin-top: 2px; }
+
+  .overview { max-width: 1180px; margin: 0 auto; padding: 8px 24px 8px; }
+  .overview-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; padding: 40px 0; border-bottom: 1px solid var(--line); }
+  .overview-grid p { color: var(--slate); font-size: 14.5px; margin-bottom: 14px; }
+  .overview-grid p strong { color: var(--off-white); font-weight: 500; }
+  .method-list { border-top: 1px solid var(--line); }
+  .method-row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .method-row .k { color: var(--off-white); font-weight: 500; flex-shrink: 0; }
+  .method-row .v { color: var(--slate); text-align: right; }
+  .note { margin-top: 16px; padding: 12px 14px; border-left: 2px solid var(--amber); background: rgba(232,163,61,0.06); font-size: 12.5px; color: var(--slate); }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 24px; display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; align-items: center; max-width: 1180px; margin: 0 auto; font-size: 13px; color: var(--slate); }
+  footer a { text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    .dash { grid-template-columns: 1fr; }
+    .scoreboard { grid-template-columns: repeat(2, 1fr); }
+    .overview-grid { grid-template-columns: 1fr; }
+  }
+  a:focus-visible, .flag-tag:focus-visible, .readout-clear:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow"><span class="dot"></span>INTERACTIVE · CRICSHEET DATA · 2005–2026</div>
+      <h1 class="display">Twenty20 international<br>cricket, <span>by the numbers.</span></h1>
+      <p class="hero-sub">Ten nations, 1,014 matches. Click a flag to filter every chart on this page down to one team — or leave all ten in to compare across the board.</p>
+      <div class="flag-row" id="flagRow"></div>
+      <div class="scoreboard" id="scoreboard"></div>
+    </div>
+  </section>
+
+  <div class="team-readout" id="teamReadout">
+    <div class="team-readout-inner">
+      <div class="readout-head">
+        <span class="readout-swatch" id="readoutFlag"></span>
+        <span class="readout-name" id="readoutName"></span>
+        <span class="readout-clear" id="clearBtn">CLEAR FILTER ✕</span>
+      </div>
+      <div class="readout-grid" id="readoutGrid"></div>
+    </div>
+  </div>
+
+  <main class="dash" id="dash">
+    <div class="panel full">
+      <div class="panel-head"><span class="panel-title">Win % by Team</span><span class="panel-hint">click a bar to filter</span></div>
+      <canvas id="chartWinPct"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Defending vs Chasing</span><span class="panel-hint">win % by role</span></div>
+      <canvas id="chartDefendChase"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Toss Impact</span><span class="panel-hint">win % after toss result</span></div>
+      <canvas id="chartToss"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Home vs Away</span><span class="panel-hint">win % by venue status</span></div>
+      <canvas id="chartHomeAway"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Pre vs Post-League Era</span><span class="panel-hint">avg strike rate, cutoff 2008</span></div>
+      <canvas id="chartLeague"></canvas>
+    </div>
+    <div class="panel full tall">
+      <div class="panel-head"><span class="panel-title">Strike Rate by Era</span><span class="panel-hint">2005–2026, three eras</span></div>
+      <canvas id="chartEraSR"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">World Cup Win %</span><span class="panel-hint">199 tournament matches</span></div>
+      <canvas id="chartWC"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">World Cup Titles</span><span class="panel-hint">2007–2026, 10 editions</span></div>
+      <canvas id="chartTitles"></canvas>
+    </div>
+  </main>
+
+  <section class="overview" id="overview">
+    <div class="overview-grid">
+      <div>
+        <p><strong>Every men's T20 international</strong> played between the ten highest-profile Full Member nations, sourced from Cricsheet's ball-by-ball archive and rebuilt into a match-and-team-level model for analysis.</p>
+        <p>The dashboard answers questions raw scorecards can't: which teams actually convert a won toss into a win, whether batting first is still the safer strategy in 2026, and how much the T20 league boom — starting with the IPL in 2008 — changed scoring rates across the international game.</p>
+        <p>Built end-to-end in Python and Power BI: parsed from raw JSON, modelled into a relational structure, and visualised across a four-page Power BI report. This page is a lightweight, browser-native version of that same dataset.</p>
+      </div>
+      <div>
+        <div class="method-list">
+          <div class="method-row"><span class="k">Source</span><span class="v">Cricsheet.org, men's T20I</span></div>
+          <div class="method-row"><span class="k">Defending</span><span class="v">Win % batting first</span></div>
+          <div class="method-row"><span class="k">Chasing</span><span class="v">Win % bowling first</span></div>
+          <div class="method-row"><span class="k">League era cutoff</span><span class="v">2008 (IPL launch)</span></div>
+          <div class="method-row"><span class="k">Era buckets</span><span class="v">05–10 / 11–20 / 21–26</span></div>
+        </div>
+        <div class="note">Afghanistan is excluded — Cricsheet withholds all Afghanistan-involved matches as a site-wide policy, unrelated to this project.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Built by Rohan Mukhtar · Power BI + Python</span>
+    <span><a href="https://www.linkedin.com/in/rohanmukhtar/" target="_blank">LinkedIn</a>&nbsp;·&nbsp;<a href="#" target="_blank">GitHub Repo</a></span>
+  </footer>
+
+<script>
+const DATA = {"teams": ["Australia", "Bangladesh", "England", "India", "New Zealand", "Pakistan", "South Africa", "Sri Lanka", "West Indies", "Zimbabwe"], "team_stats": {"Australia": {"played": 212, "won": 115, "win_pct": 54.2, "win_bat_first": 50.6, "win_bowl_first": 56.7, "win_toss_won": 54.2, "win_toss_lost": 54.3, "win_home": 60.9, "win_away": 52.1, "avg_sr": 144.5, "sr_pre": 149.9, "sr_post": 144.1, "wc_played": 42, "wc_won": 24, "wc_win_pct": 57.1, "titles": 1, "era_sr": {"2005-2010": 140.2, "2011-2020": 142.5, "2021-2026": 148.5}, "era_fi": {"2005-2010": 162.8, "2011-2020": 176.8, "2021-2026": 169.4}}, "Bangladesh": {"played": 158, "won": 51, "win_pct": 32.3, "win_bat_first": 31.9, "win_bowl_first": 32.6, "win_toss_won": 35.8, "win_toss_lost": 28.6, "win_home": 44.8, "win_away": 27.5, "avg_sr": 124.3, "sr_pre": 119.6, "sr_post": 124.5, "wc_played": 31, "wc_won": 3, "wc_win_pct": 9.7, "titles": 0, "era_sr": {"2005-2010": 114.0, "2011-2020": 129.3, "2021-2026": 122.3}, "era_fi": {"2005-2010": 120.6, "2011-2020": 157.4, "2021-2026": 137.4}}, "England": {"played": 204, "won": 110, "win_pct": 53.9, "win_bat_first": 57.5, "win_bowl_first": 51.3, "win_toss_won": 49.5, "win_toss_lost": 58.6, "win_home": 58.0, "win_away": 48.4, "avg_sr": 144.2, "sr_pre": 137.5, "sr_post": 144.5, "wc_played": 46, "wc_won": 25, "wc_win_pct": 54.3, "titles": 2, "era_sr": {"2005-2010": 132.4, "2011-2020": 142.3, "2021-2026": 150.5}, "era_fi": {"2005-2010": 164.2, "2011-2020": 167.3, "2021-2026": 183.7}}, "India": {"played": 242, "won": 160, "win_pct": 66.1, "win_bat_first": 63.0, "win_bowl_first": 70.2, "win_toss_won": 69.4, "win_toss_lost": 63.4, "win_home": 69.9, "win_away": 60.7, "avg_sr": 146.5, "sr_pre": 140.5, "sr_post": 146.7, "wc_played": 47, "wc_won": 30, "wc_win_pct": 63.8, "titles": 3, "era_sr": {"2005-2010": 135.3, "2011-2020": 139.1, "2021-2026": 155.5}, "era_fi": {"2005-2010": 160.3, "2011-2020": 165.7, "2021-2026": 188.0}}, "New Zealand": {"played": 232, "won": 113, "win_pct": 48.7, "win_bat_first": 53.6, "win_bowl_first": 43.0, "win_toss_won": 47.8, "win_toss_lost": 49.6, "win_home": 54.1, "win_away": 45.9, "avg_sr": 139.1, "sr_pre": 126.2, "sr_post": 139.8, "wc_played": 40, "wc_won": 17, "wc_win_pct": 42.5, "titles": 0, "era_sr": {"2005-2010": 122.1, "2011-2020": 142.4, "2021-2026": 142.9}, "era_fi": {"2005-2010": 149.2, "2011-2020": 171.6, "2021-2026": 168.2}}, "Pakistan": {"played": 251, "won": 140, "win_pct": 55.8, "win_bat_first": 56.1, "win_bowl_first": 55.5, "win_toss_won": 57.9, "win_toss_lost": 53.4, "win_home": 70.6, "win_away": 49.5, "avg_sr": 131.8, "sr_pre": 137.5, "sr_post": 131.6, "wc_played": 44, "wc_won": 22, "wc_win_pct": 50.0, "titles": 1, "era_sr": {"2005-2010": 126.2, "2011-2020": 128.1, "2021-2026": 137.6}, "era_fi": {"2005-2010": 154.6, "2011-2020": 154.9, "2021-2026": 160.9}}, "South Africa": {"played": 208, "won": 108, "win_pct": 51.9, "win_bat_first": 52.8, "win_bowl_first": 51.0, "win_toss_won": 51.0, "win_toss_lost": 52.9, "win_home": 50.0, "win_away": 51.9, "avg_sr": 140.3, "sr_pre": 123.7, "sr_post": 141.2, "wc_played": 45, "wc_won": 28, "wc_win_pct": 62.2, "titles": 0, "era_sr": {"2005-2010": 128.9, "2011-2020": 139.6, "2021-2026": 145.3}, "era_fi": {"2005-2010": 150.3, "2011-2020": 160.2, "2021-2026": 163.9}}, "Sri Lanka": {"played": 208, "won": 81, "win_pct": 38.9, "win_bat_first": 36.0, "win_bowl_first": 42.3, "win_toss_won": 37.1, "win_toss_lost": 40.5, "win_home": 34.7, "win_away": 38.8, "avg_sr": 128.2, "sr_pre": 129.3, "sr_post": 128.1, "wc_played": 46, "wc_won": 21, "wc_win_pct": 45.7, "titles": 1, "era_sr": {"2005-2010": 127.9, "2011-2020": 127.7, "2021-2026": 128.7}, "era_fi": {"2005-2010": 157.8, "2011-2020": 155.1, "2021-2026": 151.7}}, "West Indies": {"played": 215, "won": 91, "win_pct": 42.3, "win_bat_first": 42.9, "win_bowl_first": 41.8, "win_toss_won": 46.7, "win_toss_lost": 38.2, "win_home": 48.9, "win_away": 34.6, "avg_sr": 138.4, "sr_pre": 138.1, "sr_post": 138.4, "wc_played": 41, "wc_won": 21, "wc_win_pct": 51.2, "titles": 2, "era_sr": {"2005-2010": 129.5, "2011-2020": 132.4, "2021-2026": 145.2}, "era_fi": {"2005-2010": 157.2, "2011-2020": 156.1, "2021-2026": 175.9}}, "Zimbabwe": {"played": 98, "won": 21, "win_pct": 21.4, "win_bat_first": 25.9, "win_bowl_first": 15.9, "win_toss_won": 25.0, "win_toss_lost": 18.0, "win_home": 21.7, "win_away": 18.9, "avg_sr": 120.7, "sr_pre": 115.9, "sr_post": 120.8, "wc_played": 16, "wc_won": 4, "wc_win_pct": 25.0, "titles": 0, "era_sr": {"2005-2010": 112.6, "2011-2020": 119.1, "2021-2026": 123.8}, "era_fi": {"2005-2010": 121.6, "2011-2020": 148.8, "2021-2026": 142.0}}}, "overview": {"total_matches": 1014, "wc_matches": 199, "ties": 17, "no_results": 7, "avg_sr_all": 137.0}, "venue_counts": {"India": 123, "West Indies": 118, "New Zealand": 113, "South Africa": 104, "Sri Lanka": 98, "Neutral": 97, "Australia": 86, "England": 85, "Bangladesh": 85, "Pakistan": 53, "Zimbabwe": 52}, "champions": [{"year": 2007, "champion": "India"}, {"year": 2009, "champion": "Pakistan"}, {"year": 2010, "champion": "England"}, {"year": 2012, "champion": "West Indies"}, {"year": 2014, "champion": "Sri Lanka"}, {"year": 2016, "champion": "West Indies"}, {"year": 2021, "champion": "Australia"}, {"year": 2022, "champion": "England"}, {"year": 2024, "champion": "India"}, {"year": 2026, "champion": "India"}]};
+
+const TEAM_COLORS = {
+  "Australia":"#F5C242","Bangladesh":"#1B7340","England":"#C8102E","India":"#1976D2","New Zealand":"#2B2B2B",
+  "Pakistan":"#0F7B3E","South Africa":"#2E7D32","Sri Lanka":"#0D2B5E","West Indies":"#7A1F2B","Zimbabwe":"#D32F2F"
+};
+
+const AMBER = '#E8A33D';
+const GREY = '#4A5568';
+const SLATE = '#7C8798';
+const LINE = 'rgba(242,239,231,0.08)';
+
+let selectedTeam = null;
+let charts = {};
+
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = SLATE;
+
+function baseOpts(extra) {
+  return Object.assign({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#0F2440', borderColor: LINE, borderWidth: 1,
+        titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+        bodyFont: { family: "'JetBrains Mono', monospace", size: 12 },
+        padding: 10
+      }
+    },
+    scales: {
+      x: { grid: { color: LINE }, ticks: { font: { size: 10.5 } } },
+      y: { grid: { color: LINE }, ticks: { font: { size: 10.5 } } }
+    }
+  }, extra || {});
+}
+
+function teamsSorted(byKey) {
+  return [...DATA.teams].sort((a,b) => DATA.team_stats[b][byKey] - DATA.team_stats[a][byKey]);
+}
+
+function colorArray(teams) {
+  return teams.map(t => t === selectedTeam ? AMBER : (selectedTeam ? 'rgba(74,85,104,0.35)' : GREY));
+}
+
+function buildFlagRow() {
+  const row = document.getElementById('flagRow');
+  DATA.teams.forEach(t => {
+    const tag = document.createElement('div');
+    tag.className = 'flag-tag';
+    tag.dataset.team = t;
+    tag.innerHTML = '<span class="flag-swatch" style="background:' + TEAM_COLORS[t] + '"></span><span>' + t.toUpperCase() + '</span>';
+    tag.onclick = () => toggleTeam(t);
+    row.appendChild(tag);
+  });
+}
+
+function buildScoreboard() {
+  const sb = document.getElementById('scoreboard');
+  const o = DATA.overview;
+  const stats = [
+    [o.total_matches.toLocaleString(), 'Matches'],
+    ['10', 'Nations'],
+    [o.wc_matches, 'WC Matches'],
+    [o.ties, 'Ties'],
+    [o.avg_sr_all, 'Avg Strike Rate']
+  ];
+  sb.innerHTML = stats.map(function(pair) {
+    return '<div class="stat"><div class="num">' + pair[0] + '</div><div class="label">' + pair[1] + '</div></div>';
+  }).join('');
+}
+
+function toggleTeam(t) {
+  selectedTeam = (selectedTeam === t) ? null : t;
+  document.querySelectorAll('.flag-tag').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.team === selectedTeam);
+  });
+  updateReadout();
+  renderAll();
+}
+
+function updateReadout() {
+  const box = document.getElementById('teamReadout');
+  if (!selectedTeam) { box.classList.remove('show'); return; }
+  box.classList.add('show');
+  document.getElementById('readoutFlag').style.background = TEAM_COLORS[selectedTeam];
+  document.getElementById('readoutName').textContent = selectedTeam;
+  const s = DATA.team_stats[selectedTeam];
+  const items = [
+    [s.played, 'Matches Played'], [s.win_pct + '%', 'Win %'],
+    [s.win_bat_first + '%', 'Win % Batting First'], [s.win_bowl_first + '%', 'Win % Bowling First'],
+    [s.win_home + '%', 'Win % Home'], [s.win_away + '%', 'Win % Away'],
+    [s.wc_win_pct + '%', 'World Cup Win %'], [s.titles, 'World Cup Titles']
+  ];
+  document.getElementById('readoutGrid').innerHTML = items.map(function(pair) {
+    return '<div class="readout-item"><div class="v">' + pair[0] + '</div><div class="k">' + pair[1] + '</div></div>';
+  }).join('');
+}
+document.getElementById('clearBtn').onclick = function() {
+  selectedTeam = null;
+  document.querySelectorAll('.flag-tag').forEach(function(el) { el.classList.remove('active'); });
+  updateReadout(); renderAll();
+};
+
+function makeBar(id, teams, values, label) {
+  const ctx = document.getElementById(id).getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: teams, datasets: [{ label: label, data: values, backgroundColor: colorArray(teams), borderRadius: 2, maxBarThickness: 26 }] },
+    options: baseOpts({
+      indexAxis: 'y',
+      onClick: function(evt, els) { if (els.length) toggleTeam(teams[els[0].index]); },
+      onHover: function(evt, els) { evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; }
+    })
+  });
+}
+
+function renderWinPct() {
+  const teams = teamsSorted('win_pct');
+  makeBar('chartWinPct', teams, teams.map(function(t){return DATA.team_stats[t].win_pct;}), 'Win %');
+}
+
+function renderPairChart(chartKey, canvasId, sortKey, key1, key2, label1, label2) {
+  const teams = teamsSorted(sortKey);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  if (charts[chartKey]) charts[chartKey].destroy();
+  charts[chartKey] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: teams, datasets: [
+      { label: label1, data: teams.map(function(t){return DATA.team_stats[t][key1];}), backgroundColor: AMBER, maxBarThickness: 10 },
+      { label: label2, data: teams.map(function(t){return DATA.team_stats[t][key2];}), backgroundColor: GREY, maxBarThickness: 10 }
+    ]},
+    options: baseOpts({
+      indexAxis: 'y',
+      plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10.5 } } } },
+      onClick: function(evt, els) { if (els.length) toggleTeam(teams[els[0].index]); }
+    })
+  });
+}
+
+function renderEraSR() {
+  const eras = ['2005-2010','2011-2020','2021-2026'];
+  const teamsToShow = selectedTeam ? [selectedTeam] : DATA.teams;
+  const palette = ['#E8A33D','#5B8C7B','#C1666B','#7C8798','#8FA6C9','#B08968','#6B9080','#A4508B','#4A5568','#D4A373'];
+  const ctx = document.getElementById('chartEraSR').getContext('2d');
+  if (charts.era) charts.era.destroy();
+  charts.era = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: eras,
+      datasets: teamsToShow.map(function(t,i) {
+        return {
+          label: t,
+          data: eras.map(function(e){return DATA.team_stats[t].era_sr[e];}),
+          borderColor: selectedTeam ? AMBER : palette[i % palette.length],
+          backgroundColor: 'transparent',
+          tension: 0.3, borderWidth: selectedTeam ? 3 : 2, pointRadius: 3
+        };
+      })
+    },
+    options: baseOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: SLATE } } } })
+  });
+}
+
+function renderWC() {
+  const teams = teamsSorted('wc_win_pct');
+  makeBar('chartWC', teams, teams.map(function(t){return DATA.team_stats[t].wc_win_pct;}), 'WC Win %');
+}
+
+function renderTitles() {
+  const teams = teamsSorted('titles').filter(function(t){return DATA.team_stats[t].titles > 0;});
+  makeBar('chartTitles', teams, teams.map(function(t){return DATA.team_stats[t].titles;}), 'Titles');
+}
+
+function renderAll() {
+  renderWinPct();
+  renderPairChart('dc','chartDefendChase','win_bat_first','win_bat_first','win_bowl_first','Batting First','Bowling First');
+  renderPairChart('toss','chartToss','win_toss_won','win_toss_won','win_toss_lost','Won Toss','Lost Toss');
+  renderPairChart('ha','chartHomeAway','win_home','win_home','win_away','Home','Away');
+  renderPairChart('lg','chartLeague','sr_post','sr_pre','sr_post','Pre-2008','Post-2008');
+  renderEraSR();
+  renderWC();
+  renderTitles();
+}
+
+buildFlagRow();
+buildScoreboard();
+renderAll();
+</script>
+</body>
+</html>
