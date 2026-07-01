@@ -27,4 +27,11 @@ Interactive Power BI dashboard and web visualization analyzing 1,014 men's T20 i
 - 1,014 total matches, 199 of them World Cup matches
 - India leads both overall win % (66.1%) and World Cup win % (63.8%)
 - Average strike rate rose from ~123 (2005–2010) to ~137+ (2021–2026), reflecting the T20 league era's impact on scoring
-- India, England, and West
+- India, England, and West Indies account for 7 of the 10 World Cup titles awarded since 2007
+
+## Built with
+
+Python (data processing), Power BI (DAX measures, report), Chart.js (interactive web version)
+
+---
+Built by [Rohan Mukhtar](https://www.linkedin.com/in/rohanmukhtar/)
